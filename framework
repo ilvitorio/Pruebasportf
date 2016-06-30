@@ -1,0 +1,46 @@
+function [wopt] = mintehedge(Weights, MaxWeights, MinWeights, InitWeights, Instruments, Port)
+% minimization  is called from main program and data is supplied (i.e. call to mintehedge)
+
+
+% fmincon is optimization algorithm with all constraints, etc.
+wopt = fmincon(@returndiffhedge,InitWeights,[],[],ones(1,length(Weights)),1,MinWeights,MaxWeights);
+
+
+% returndiffhedge is the function over which we optimize where weights are
+% the variables to be optimized
+    function[diffreturnsqr] = returndiffhedge(Weights)
+        % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Calculate the tracking error between client portfolio and weighted index
+        % composite returns.  Output is the annulized tracking error.
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        % Replicates the first line of the matrix of indexes
+
+        A=0.90;
+        B=0.05;
+        C=0.025;
+        D=0.025;
+
+        v=length(Weights);
+        % Replicates the first line of the matrix of indexes
+        wt=repmat(Instruments(1:1,1:v),length(Instruments),1);
+
+        CompReturn=repmat(Weights',length(Instruments),1).*(Instruments./wt);
+
+        Composite=sum(CompReturn')';
+
+        logseriesX=diff(log(Composite));
+
+        logseriesY=diff(log(Port));
+
+        firstmoment = A.*(logseriesY-logseriesX).^2;
+        secondmoment = B.*(logseriesY.^2-logseriesX.^2).^2;
+        thirdmoment = C.*(logseriesY.^3-logseriesX.^3).^2;
+        fourthmoment = D.*(logseriesY.^4-logseriesX.^4).^2;
+
+
+        diffreturnsqr=sum(firstmoment + secondmoment + thirdmoment + fourthmoment);
+    
+    end
+end
